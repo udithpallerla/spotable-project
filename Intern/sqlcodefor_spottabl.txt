@@ -1,0 +1,55 @@
+###DUMPING THE DATA INTO DATABASE###
+CREATE DATABASE spottabl;
+USE spottabl;
+CREATE TABLE registrations(
+	email VARCHAR(255) ,
+	enabled BOOLEAN ,
+	registrationtype VARCHAR(100) ,
+	usertype VARCHAR(100),
+	PRIMARY KEY(`email`)
+)
+INSERT INTO `registrations` VALUES
+	("user1@flexmoney.in",TRUE,"NORMAL","CLIENT_USER"),
+	("user4@flexmoney.in",TRUE,"INVITE","CLIENT_USER"),
+	("user5@flexmoney.in",TRUE,"INVITE","CLIENT_USER"),
+	("user6@flexmoney.in",TRUE,"INVITE","CLIENT_USER"),
+	("user2@flexmoney.in",TRUE,"INVITE","CLIENT_USER"),
+	("user3@flexmoney.in",TRUE,"INVITE","CLIENT_USER");
+
+USE spottabl;
+CREATE TABLE clientuserinvites(
+	email VARCHAR(255) NOT NULL,
+	clientcode VARCHAR(100),
+	usertype VARCHAR(100),
+	accepted BOOLEAN,
+	ROLE VARCHAR(100),
+	inviter VARCHAR(100)
+);
+INSERT INTO `clientuserinvites` VALUES 
+	("user4@flexmoney.in","flexmoney","CLIENT_USER",FALSE,"ADMIN","user1@flexmoney.in"),
+	("user2@flexmoney.in","flexmoney","CLIENT_USER",TRUE,"ADMIN","user1@flexmoney.in"),
+	("user4@flexmoney.in","flexmoney","CLIENT_USER",TRUE,"ADMIN","satheesh@spottabl.com"),
+	("user6@flexmoney.in","flexmoney","CLIENT_USER",TRUE,"JOB_MANAGER","satheesh@spottabl.com"),
+	("user7@flexmoney.in","flexmoney","CLIENT_USER",FALSE,"ADMIN","priyanka@spottabl.com"),
+	("user5@flexmoney.in","flexmoney","CLIENT_USER",TRUE,"ADMIN","user1@flexmoney.in"),
+	("user8@flexmoney.in","flexmoney","CLIENT_USER",FALSE,"ADMIN","priyanka@spottabl.com"),
+	("user3@flexmoney.in","flexmoney","CLIENT_USER",TRUE,"ADMIN","priyanka@spottabl.com"),
+	("user9@flexmoney.in","flexmoney","CLIENT_USER",FALSE,"ADMIN","priyanka@spottabl.com");
+
+###CODE FOR 1ST 4 COLUMNS IN DESIRED OUTPUT###
+
+SELECT clientcode, SUM(Number_of_users_invited_from_spottabl) AS `Number of users invited from spottabl`,
+SUM(Number_of_users_accepted_invite) AS `Number of users accepted invite`,SUM(Number_of_users_on_spottabl) AS `Number of users on spottabl`
+ FROM 
+((SELECT email,clientcode, 
+       (CASE WHEN inviter LIKE '%spottabl%' THEN 1 ELSE 0 END) AS Number_of_users_invited_from_spottabl, 
+       (CASE WHEN accepted = 1 THEN 1 ELSE 0 END) AS Number_of_users_accepted_invite
+       FROM clientuserinvites) cc
+LEFT OUTER JOIN 
+(SELECT  email,(CASE WHEN email LIKE '%flexmoney%' OR email LIKE '%spottabl%' THEN 1 ELSE 0 END) AS Number_of_users_on_spottabl FROM registrations WHERE email LIKE '%flexmoney%' OR email LIKE '%spottabl%') rr
+ON  cc.email = rr.email ) GROUP BY clientcode
+
+###CODE FOR LAST COLUMN IN DESIRED OUTPUT###
+
+(SELECT AA.email ,COUNT(*) AS `Number of users invited from spottabl user` FROM (SELECT DISTINCT c1.email,c1.clientcode,c1.usertype,c1.accepted,c1.role,c1.inviter FROM clientuserinvites c1 JOIN clientuserinvites c2 
+WHERE c1.email = c2.inviter AND c1.inviter LIKE '%spottabl%') AA)
